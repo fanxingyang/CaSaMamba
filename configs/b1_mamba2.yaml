@@ -1,0 +1,11 @@
+dataset_name: 6mA_C.elegans
+data_dir: ./data
+batch_size: 64
+epochs: 200
+lr: 5.0e-5
+weight_decay: 0.0
+device: auto
+save_dir: .
+model_name: b1
+checkpoint_name: best_mamba_model.pth
+predict_output: ./result/output_logits.xlsx

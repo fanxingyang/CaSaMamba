@@ -1,0 +1,40 @@
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Local env files
+.env
+.env.*
+
+# Dataset (keep only docs placeholder)
+data/*
+!data/README.md
+
+# Training artifacts
+checkpoints/
+logs/
+model/
+*.pth
+*.pt
+
+# Prediction / reports
+result/*
+!result/.gitkeep
+*.xlsx
+
+# Jupyter
+.ipynb_checkpoints/
