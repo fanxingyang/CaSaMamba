@@ -1,4 +1,4 @@
-from sklearn.metrics import accuracy_score, roc_auc_score, matthews_corrcoef, confusion_matrix
+from sklearn.metrics import accuracy_score, roc_auc_score, matthews_corrcoef, confusion_matrix, average_precision_score
 from torch import optim, nn
 from torch.utils.data import TensorDataset, DataLoader
 from tqdm import tqdm
@@ -54,15 +54,13 @@ def train_main(neg_path, pos_path, val_neg_path, val_pos_path):
     with open(train_log_path, "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow([
+            "row_type",
             "epoch",
-            "train_loss",
-            "train_accuracy",
-            "val_accuracy",
-            "val_auc",
-            "val_mcc",
-            "specificity",
-            "sensitivity",
-            "is_best",
+            "acc",
+            "sn",
+            "ap",
+            "auc",
+            "mcc",
         ])
 
     negative_file_path = neg_path
@@ -112,6 +110,13 @@ def train_main(neg_path, pos_path, val_neg_path, val_pos_path):
     mamba_model.to(device)
     best_val_accuracy = 0.0
     best_epoch = 0
+    best_metrics = {
+        "acc": 0.0,
+        "sn": 0.0,
+        "ap": 0.0,
+        "auc": 0.0,
+        "mcc": 0.0,
+    }
     patience_counter = 0
     patience_limit = 30
 
@@ -145,6 +150,7 @@ def train_main(neg_path, pos_path, val_neg_path, val_pos_path):
                 val_logits.extend(batch_logits.cpu().numpy())
 
             val_accuracy = accuracy_score(y_val_tensor.cpu().numpy(), val_preds)
+            val_ap = average_precision_score(y_val_tensor.cpu().numpy(), val_logits)
             val_auc = roc_auc_score(y_val_tensor.cpu().numpy(), val_logits)
             val_mcc = matthews_corrcoef(y_val_tensor.cpu().numpy(), val_preds)
             tn, fp, fn, tp = confusion_matrix(y_val_tensor.cpu().numpy(), val_preds).ravel()
@@ -154,38 +160,50 @@ def train_main(neg_path, pos_path, val_neg_path, val_pos_path):
             print(f'Validation Metrics: Accuracy: {val_accuracy:.4f}, AUC: {val_auc:.4f}, MCC: {val_mcc:.4f}, '
                   f'Specificity: {specificity:.4f}, Sensitivity: {sensitivity:.4f}')
 
-            is_best = 0
             if val_accuracy > best_val_accuracy:
                 best_val_accuracy = val_accuracy
                 best_epoch = epoch + 1
+                best_metrics["acc"] = val_accuracy
+                best_metrics["sn"] = sensitivity
+                best_metrics["ap"] = val_ap
+                best_metrics["auc"] = val_auc
+                best_metrics["mcc"] = val_mcc
                 patience_counter = 0
                 torch.save(mamba_model.state_dict(), best_model_path)
-                is_best = 1
             else:
                 patience_counter += 1
 
             if patience_counter >= patience_limit:
                 break
 
-        avg_loss = total_loss / len(dataloader)
-        accuracy = accuracy_score(all_labels, all_preds)
-
         with open(train_log_path, "a", newline="") as f:
             writer = csv.writer(f)
             writer.writerow([
+                "epoch",
                 epoch + 1,
-                f"{avg_loss:.6f}",
-                f"{accuracy:.6f}",
                 f"{val_accuracy:.6f}",
+                f"{sensitivity:.6f}",
+                f"{val_ap:.6f}",
                 f"{val_auc:.6f}",
                 f"{val_mcc:.6f}",
-                f"{specificity:.6f}",
-                f"{sensitivity:.6f}",
-                is_best,
             ])
 
+        avg_loss = total_loss / len(dataloader)
+        accuracy = accuracy_score(all_labels, all_preds)
         print(f'Epoch {epoch + 1}/{num_epochs}, Avg Loss: {avg_loss:.4f}, Accuracy: {accuracy:.4f}')
 
+
+    with open(train_log_path, "a", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow([
+            "best",
+            best_epoch,
+            f"{best_metrics['acc']:.6f}",
+            f"{best_metrics['sn']:.6f}",
+            f"{best_metrics['ap']:.6f}",
+            f"{best_metrics['auc']:.6f}",
+            f"{best_metrics['mcc']:.6f}",
+        ])
 
     print(f'best epoch {best_epoch} ')
     print(f'best model saved to {best_model_path}')
