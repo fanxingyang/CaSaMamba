@@ -22,8 +22,10 @@ def build_model(model_args):
         from net.models.b0_mamba6ma import Mamba
     elif model_name == "b1":
         from net.models.b1_mamba2 import Mamba
+    elif model_name == "b2":
+        from net.models.b2_centeraware import Mamba
     else:
-        raise ValueError("Unsupported model_name, expected one of: b0, b1")
+        raise ValueError("Unsupported model_name, expected one of: b0, b1, b2")
     return Mamba(model_args)
 
 
