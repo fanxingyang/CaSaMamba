@@ -1,0 +1,13 @@
+model_name: b2
+dataset_name: 6mA_C.elegans
+data_dir: ./data
+batch_size: 64
+epochs: 200
+lr: 5.0e-5
+weight_decay: 0.0
+device: auto
+save_dir: .
+center_index: 20
+center_window_size: 5
+center_weight: 1.0
+outer_weight: 0.5
